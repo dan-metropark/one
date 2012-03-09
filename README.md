@@ -1,5 +1,10 @@
 
-OpenNebula - The OpenSource Toolkit for Cloud Computing
+OpenNebula Metro Edition - The OpenSource Toolkit for Cloud Computing
+
+## UPSTREAM DIFFERENCES
+
+Upstream differences / enhancements can be found in the metro versions of 
+release branches.
 
 ## DESCRIPTION
 
