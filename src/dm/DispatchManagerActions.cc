@@ -557,10 +557,14 @@ int DispatchManager::reboot(int vid)
     if (vm->get_state()     == VirtualMachine::ACTIVE &&
         vm->get_lcm_state() == VirtualMachine::RUNNING )
     {
-        Nebula&             nd  = Nebula::instance();
-        LifeCycleManager *  lcm = nd.get_lcm();
+        Nebula&                 nd = Nebula::instance();
+        VirtualMachineManager * vmm = nd.get_vmm();
 
-        lcm->trigger(LifeCycleManager::REBOOT,vid);
+        vmm->trigger(VirtualMachineManager::REBOOT,vid);
+
+        vm->set_resched(false); //Rebooting cancels re-scheduling actions
+
+        vmpool->update(vm);
     }
     else
     {
@@ -580,6 +584,98 @@ error:
 
     return -2;
 }
+
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
+int DispatchManager::reset(int vid)
+{
+    VirtualMachine *    vm;
+    ostringstream       oss;
+
+    vm = vmpool->get(vid,true);
+
+    if ( vm == 0 )
+    {
+        return -1;
+    }
+
+    oss << "Resetting VM " << vid;
+    NebulaLog::log("DiM",Log::DEBUG,oss);
+
+    if (vm->get_state()     == VirtualMachine::ACTIVE &&
+        vm->get_lcm_state() == VirtualMachine::RUNNING )
+    {
+        Nebula&                 nd = Nebula::instance();
+        VirtualMachineManager * vmm = nd.get_vmm();
+
+        vmm->trigger(VirtualMachineManager::RESET,vid);
+
+        vm->set_resched(false); //Resetting cancels re-scheduling actions
+
+        vmpool->update(vm);
+    }
+    else
+    {
+        goto error;
+    }
+
+    vm->unlock();
+
+    return 0;
+
+error:
+    oss.str("");
+    oss << "Could not reset VM " << vid << ", wrong state.";
+    NebulaLog::log("DiM",Log::ERROR,oss);
+
+    vm->unlock();
+
+    return -2;
+}
+
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
+int DispatchManager::resched(int vid, bool do_resched)
+{
+    VirtualMachine *    vm;
+    ostringstream       oss;
+
+    vm = vmpool->get(vid,true);
+
+    if ( vm == 0 )
+    {
+        return -1;
+    }
+
+    oss << "Setting rescheduling flag on VM " << vid;
+    NebulaLog::log("DiM",Log::DEBUG,oss);
+
+    if (vm->get_state()     == VirtualMachine::ACTIVE &&
+        vm->get_lcm_state() == VirtualMachine::RUNNING )
+    {
+        vm->set_resched(do_resched);
+        vmpool->update(vm);
+    }
+    else
+    {
+        goto error;
+    }
+
+    vm->unlock();
+
+    return 0;
+
+error:
+    oss.str("");
+    oss << "Could not set rescheduling flag for VM " << vid << ", wrong state.";
+    NebulaLog::log("DiM",Log::ERROR,oss);
+
+    vm->unlock();
+
+    return -2;
+}
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
@@ -587,7 +683,15 @@ int DispatchManager::finalize(
     int vid)
 {
     VirtualMachine * vm;
-    ostringstream    oss;
+    ostringstream oss;
+    Template *    tmpl;
+
+    User *  user;
+    Group * group;
+    
+    int uid;
+    int gid;
+
     VirtualMachine::VmState state;
 
     vm = vmpool->get(vid,true);
@@ -605,6 +709,8 @@ int DispatchManager::finalize(
     Nebula&            nd  = Nebula::instance();
     TransferManager *  tm  = nd.get_tm();
     LifeCycleManager * lcm = nd.get_lcm();
+    UserPool * upool       = nd.get_upool();
+    GroupPool * gpool      = nd.get_gpool();
 
     switch (state)
     {
@@ -616,27 +722,64 @@ int DispatchManager::finalize(
         case VirtualMachine::PENDING:
         case VirtualMachine::HOLD:
         case VirtualMachine::STOPPED:
+            vm->release_network_leases();
+            vm->release_disk_images();
+
             vm->set_exit_time(time(0));
 
             vm->set_state(VirtualMachine::LCM_INIT);
             vm->set_state(VirtualMachine::DONE);
             vmpool->update(vm);
 
-            vm->release_network_leases();
-
-            vm->release_disk_images();
-
             vm->log("DiM", Log::INFO, "New VM state is DONE.");
+
+            uid  = vm->get_uid();
+            gid  = vm->get_gid();
+            tmpl = vm->clone_template();
+    
+            vm->unlock();
+
+            if ( uid != UserPool::ONEADMIN_ID )
+            {
+
+                user = upool->get(uid, true);
+
+                if ( user != 0 )
+                {
+                    user->quota.vm_del(tmpl);
+
+                    upool->update(user);
+
+                    user->unlock();
+                }
+            }
+            
+            if ( gid != GroupPool::ONEADMIN_ID )
+            {
+                group = gpool->get(gid, true);
+
+                if ( group != 0 )
+                {
+                    group->quota.vm_del(tmpl);
+
+                    gpool->update(group);
+
+                    group->unlock();
+                } 
+            }
+
+            delete tmpl;
         break;
 
         case VirtualMachine::ACTIVE:
             lcm->trigger(LifeCycleManager::DELETE,vid);
+            vm->unlock();
         break;
+
         case VirtualMachine::DONE:
+            vm->unlock();
         break;
     }
-
-    vm->unlock();
 
     return 0;
 }
@@ -665,7 +808,7 @@ int DispatchManager::resubmit(int vid)
     {
         case VirtualMachine::SUSPENDED:
             NebulaLog::log("DiM",Log::ERROR,
-                "Can not resubmit a suspended VM. Resume it first");
+                "Cannot resubmit a suspended VM. Resume it first");
             rc = -2;
         break;
 
@@ -689,7 +832,7 @@ int DispatchManager::resubmit(int vid)
         break;
         case VirtualMachine::DONE:
             NebulaLog::log("DiM",Log::ERROR,
-                "Can not resubmit a VM already in DONE state");
+                "Cannot resubmit a VM already in DONE state");
             rc = -2;
         break;
     }

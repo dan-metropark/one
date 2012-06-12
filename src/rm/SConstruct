@@ -33,11 +33,13 @@ source_files=[
     'RequestManagerVMTemplate.cc',
     'RequestManagerUpdateTemplate.cc',
     'RequestManagerUser.cc',
+    'RequestManagerGroup.cc',
     'RequestManagerHost.cc',
     'RequestManagerImage.cc',
     'RequestManagerChown.cc',
     'RequestManagerAcl.cc',
     'RequestManagerChmod.cc',
+    'RequestManagerCluster.cc'
 ]
 
 # Build library

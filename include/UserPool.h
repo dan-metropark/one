@@ -131,7 +131,8 @@ public:
                       string&       uname,
                       string&       gname);
     /**
-     * Returns whether there is a user with given username/password or not
+     * Returns whether the operations described in a authorization request are
+     * authorized ot not.
      *   @param ar, an Authorization Request
      *   @return -1 if authz failed, 0 otherwise
      */
@@ -175,6 +176,16 @@ public:
      *  Name for the default Sunstone server user
      */
     static const char * SERVER_NAME;
+
+    /**
+     *  Name of the oneadmin user
+     */
+    static string oneadmin_name;
+
+    /**
+     *  Identifier for the oneadmin user
+     */
+    static const int ONEADMIN_ID;
 
 private:
     //--------------------------------------------------------------------------

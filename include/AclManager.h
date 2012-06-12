@@ -18,6 +18,7 @@
 #define ACL_MANAGER_H_
 
 #include "AuthManager.h"
+#include "AuthRequest.h"
 #include "PoolObjectSQL.h"
 #include "AclRule.h"
 
@@ -92,6 +93,28 @@ public:
      *    @return 0 on success
      */
     virtual int del_rule(int oid, string& error_str);
+
+    /**
+     * Deletes rules that apply to this user id
+     *
+     * @param uid The user id
+     */
+    void del_uid_rules(int uid);
+
+    /**
+     * Deletes rules that apply to this group id
+     *
+     * @param gid The group id
+     */
+    void del_gid_rules(int gid);
+
+    /**
+     * Deletes all rules that apply to this resource
+     *
+     * @param oid Id of the deleted object
+     * @param obj_type Object type
+     */
+    void del_resource_rules(int oid, PoolObjectSQL::ObjectType obj_type);
 
     /**
      * Searches what resources of type obj_type the ACL rules set allows
@@ -198,6 +221,23 @@ private:
             long long individual_obj_type,
             long long group_obj_type,
             multimap<long long, AclRule*> &tmp_rules);
+
+    /**
+     * Deletes all rules that match the user mask
+     *
+     * @param user_req Mask to match
+     */
+    void del_user_matching_rules(long long user_req);
+
+    /**
+     * Deletes all rules that match the resource mask
+     *
+     *    @param resource_req 64 bit request, ob. type and group id
+     *    @param resource_mask Mask with ob. type and group flags
+     */
+    void del_resource_matching_rules(
+            long long resource_req,
+            long long resource_mask);
 
     // ----------------------------------------
     // Mutex synchronization

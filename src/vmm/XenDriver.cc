@@ -109,11 +109,6 @@ int XenDriver::deployment_description(
 
     vm->get_template_attribute("MEMORY",memory);
 
-    if (memory.empty())
-    {
-        get_default("MEMORY",memory);
-    }
-
     if (!memory.empty())
     {
         file << "memory  = '" << memory << "'" << endl;
@@ -281,7 +276,7 @@ int XenDriver::deployment_description(
             }
         }
 
-        file << vm->get_remote_dir() << "/disk." << i << ","
+        file << vm->get_remote_system_dir() << "/disk." << i << ","
              << target << ","
              << mode
              << "'," << endl;
@@ -312,7 +307,7 @@ int XenDriver::deployment_description(
                 file << default_driver;
             }
 
-            file << vm->get_remote_dir() << "/disk." << num <<","<< target <<","
+            file << vm->get_remote_system_dir() << "/disk." << num <<","<< target <<","
                  << "r'," << endl;
         }
         else
