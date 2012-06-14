@@ -61,7 +61,7 @@ class OpenNebulaVNC
 
         proxy_port = @proxy_base_port + vnc_port.to_i
 
-        proxy_options = ""
+        proxy_options = "-D"
 
         if @enable_wss
             proxy_options << " --cert #{@cert}"
@@ -86,8 +86,34 @@ class OpenNebulaVNC
 
     # Stop a VNC proxy handle exceptions outside
     def self.stop(pipe)
+        $stderr.puts("Killing vnc proxy: #{pipe.pid}")
+        host = ''
+        vnc_port = 0
+        ps = IO.popen('ps -eo pid,cmd')
+        ps.readlines.each { |line|
+            parts = line.split(/\s+/)
+            if (parts[0].to_i == pipe.pid) then
+               host, vnc_port = parts[-1].split(/:/)
+            end
+        } 
+        ps.close()
         Process.kill('KILL',pipe.pid)
-        pipe.close
+        closed = pipe.close
+
+        #if all other processes are finished with the daemon, kill it
+        pipe = IO.popen("ps -ef | grep #{host}:#{vnc_port}")
+        pids = Array.new
+        pipe.readlines.each { |line|
+            parts = line.split(/\s+/)
+                if(line.include? "wsproxy") then
+                    pids.push parts[1].to_i
+                end
+        }
+        if (pids.length == 1) then
+            Process.kill('KILL', pids[0])
+        end
+
+        return closed
     end
 
     private
