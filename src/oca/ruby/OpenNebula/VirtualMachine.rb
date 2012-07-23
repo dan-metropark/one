@@ -33,6 +33,7 @@ module OpenNebula
             :savedisk => "vm.savedisk",
             :chown    => "vm.chown",
             :chmod    => "vm.chmod",
+            :setstate => "vm.setstate",
         }
 
         VM_STATE=%w{INIT PENDING HOLD ACTIVE STOPPED SUSPENDED DONE FAILED}
@@ -134,6 +135,13 @@ module OpenNebula
             return Error.new('ID not defined') if !@pe_id
 
             rc = @client.call(VM_METHODS[:deploy], @pe_id, host_id.to_i)
+            rc = nil if !OpenNebula.is_error?(rc)
+
+            return rc
+        end
+
+        def setstate(state_id, lcm_state_id)
+            rc = @client.call(VM_METHODS[:setstate], @pe_id, state_id.to_i, lcm_state_id.to_i)
             rc = nil if !OpenNebula.is_error?(rc)
 
             return rc

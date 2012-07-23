@@ -83,6 +83,17 @@ public:
     // DM Actions, the RM and the Scheduler will invoke this methods
     //--------------------------------------------------------------------------
     /**
+     *  Changes the state of a VM
+     *  If the function fails the calling funtion is responsible for recovering
+     *  from the error.
+     *    @param vm pointer to a VirtualMachine with its mutex locked.
+     *    @param state new state
+     *    @param lcm_state new lcm state
+     *    @return 0 on success
+     */
+    int set_state(
+        VirtualMachine * vm, int state, int lcm_state);
+    /**
      *  Deploys a VM. A new history record MUST be added before calling this
      *  function. Also the VM MUST have its mutex locked. If the function fails
      *  the calling funtion is responsible for recovering from the error.

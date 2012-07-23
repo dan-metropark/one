@@ -86,6 +86,26 @@ public:
 /* ------------------------------------------------------------------------- */
 /* ------------------------------------------------------------------------- */
 
+class VirtualMachineSetState : public RequestManagerVirtualMachine
+{
+public:
+    VirtualMachineSetState():
+        RequestManagerVirtualMachine("VirtualMachineSetState",
+                                     "Sets a virtual machine's state & lcm state",
+                                     "A:siii")
+    {
+         auth_op = AuthRequest::ADMIN;
+    };
+
+    ~VirtualMachineSetState(){};
+
+    void request_execute(xmlrpc_c::paramList const& _paramList,
+            RequestAttributes& att);
+};
+
+/* ------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
+
 class VirtualMachineDeploy : public RequestManagerVirtualMachine
 {
 public:

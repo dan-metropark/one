@@ -142,6 +142,25 @@ cmd=CommandParser::CmdParser.new(ARGV) do
         end
     end
 
+    setstate_desc = <<-EOT.unindent
+	Sets VM state
+
+        States: ANY
+    EOT
+
+    command :setstate, setstate_desc, :vmid, :stateid, :lcmstateid do
+        state_id    = args[1].to_i
+	lcm_state_id = args[2].to_i
+
+        verbose = "setting state to #{state_id}/#{lcm_state_id}"
+
+        helper.perform_action(args[0],options,verbose) do |vm|
+            res = vm.setstate(state_id, lcm_state_id)
+
+            res
+        end
+    end
+
     saveas_desc = <<-EOT.unindent
         Sets the specified VM disk to be saved in a new Image. The Image is
         created inmediately, but the contents are saved only if the VM is

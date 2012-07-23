@@ -266,6 +266,63 @@ void VirtualMachineAction::request_execute(xmlrpc_c::paramList const& paramList,
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
+void VirtualMachineSetState::request_execute(xmlrpc_c::paramList const& paramList,
+                                           RequestAttributes& att)
+{
+    Nebula&             nd = Nebula::instance();
+    DispatchManager *   dm = nd.get_dm();
+
+    VirtualMachine * vm;
+    PoolObjectAuth host_perms;
+
+    string hostname;
+    string vmm_mad;
+    string vnm_mad;
+
+    int id  = xmlrpc_c::value_int(paramList.getInt(1));
+    int rc;
+
+    if ( (vm = get_vm(id, att)) == 0 )
+    {
+        return;
+    }
+    rc = dm->set_state(vm, xmlrpc_c::value_int(paramList.getInt(2)), xmlrpc_c::value_int(paramList.getInt(3)));
+
+    vm->unlock();
+
+    switch (rc)
+    {
+        case 0:
+            success_response(id, att);
+            break;
+        case -1:
+            failure_response(NO_EXISTS,
+                    get_error(object_name(auth_object),id),
+                    att);
+            break;
+        case -2:
+             failure_response(ACTION,
+                     request_error("Wrong state to perform action",""),
+                     att);
+             break;
+        case -3:
+            failure_response(ACTION,
+                    request_error("Virtual machine action not supported",""),
+                    att);
+            break;
+        default:
+            failure_response(INTERNAL,
+                    request_error("Internal error","Action result not defined"),
+                    att);
+    }
+
+    return;
+
+}
+
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
 void VirtualMachineDeploy::request_execute(xmlrpc_c::paramList const& paramList,
                                            RequestAttributes& att)
 {

@@ -242,6 +242,7 @@ void RequestManager::register_xml_methods()
     xmlrpc_c::methodPtr vm_migrate(new VirtualMachineMigrate());
     xmlrpc_c::methodPtr vm_action(new VirtualMachineAction()); 
     xmlrpc_c::methodPtr vm_savedisk(new VirtualMachineSaveDisk());
+    xmlrpc_c::methodPtr vm_setstate(new VirtualMachineSetState());
 
     // VirtualNetwork Methods
     xmlrpc_c::methodPtr vn_addleases(new VirtualNetworkAddLeases());
@@ -345,6 +346,7 @@ void RequestManager::register_xml_methods()
     RequestManagerRegistry.addMethod("one.vm.info", vm_info);
     RequestManagerRegistry.addMethod("one.vm.chown", vm_chown);
     RequestManagerRegistry.addMethod("one.vm.chmod", vm_chmod);
+    RequestManagerRegistry.addMethod("one.vm.setstate", vm_setstate);
 
     RequestManagerRegistry.addMethod("one.vmpool.info", vm_pool_info);
 

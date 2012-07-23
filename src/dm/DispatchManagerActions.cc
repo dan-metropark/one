@@ -22,6 +22,42 @@
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
+int DispatchManager::set_state (
+    VirtualMachine *    vm, int state, int lcm_state)
+{
+    ostringstream oss;
+    int           vid;
+
+    if ( vm == 0 )
+    {
+        return -1;
+    }
+
+    vid = vm->get_oid();
+
+    oss << "Setting State VM " << vid;
+    NebulaLog::log("DiM",Log::DEBUG,oss);
+
+    Nebula&             nd  = Nebula::instance();
+    LifeCycleManager *  lcm = nd.get_lcm();
+
+    VirtualMachine::VmState vmState = (VirtualMachine::VmState) state;
+    VirtualMachine::LcmState lcmState = (VirtualMachine::LcmState) lcm_state;
+    vm->set_state(vmState);
+    vm->set_state(lcmState);
+
+    vmpool->update(vm);
+
+    vm->log("DiM", Log::INFO, "New VM state set.");
+
+    vm->unlock();
+
+    return 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
 int DispatchManager::deploy (
     VirtualMachine *    vm)
 {
